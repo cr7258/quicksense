@@ -119,14 +119,29 @@ const SidePanel: React.FC = () => {
       const response = await callAI([
         {
           role: 'system',
-          content: `你是一个网页内容总结助手。请将给定的网页内容总结为两部分：
-1) 整体概述（200字以内）
-2) 3-5个关键要点（每点30字以内）
+          content: `你是一个专业的文档分析和总结专家。请将给定的网页内容总结为以下几个部分：
 
-请严格按照以下 JSON 格式输出，不要添加任何其他内容：
+1. 全文摘要（300字以内）：
+   - 用简洁专业的语言概括文档的主要内容
+   - 突出核心功能和重要概念
+   - 说明文档的目标读者和应用场景
+
+2. 关键段落（不限字数）：
+   - 使用 markdown 格式的列表
+   - 每个要点使用加粗的小标题
+   - 详细展开每个要点的具体内容
+   - 保留技术细节和专业术语
+   - 突出限制条件和注意事项
+
+请按照以下 JSON 格式输出，确保内容的完整性和专业性：
 {
-  "overview": "这里是整体概述",
-  "keyPoints": ["这里是要点1", "这里是要点2", "这里是要点3"]
+  "summary": "这里是全文摘要",
+  "keyPoints": [
+    {
+      "title": "这里是要点标题",
+      "content": "这里是要点详细内容"
+    }
+  ]
 }`
         },
         {
@@ -149,12 +164,14 @@ const SidePanel: React.FC = () => {
         throw new Error('无法解析返回的 JSON 格式');
       }
 
-      const { overview, keyPoints } = summaryData;
-      if (!overview || !Array.isArray(keyPoints) || keyPoints.length === 0) {
+      const { summary, keyPoints } = summaryData;
+      if (!summary || !Array.isArray(keyPoints) || keyPoints.length === 0) {
         throw new Error('返回的数据格式不正确');
       }
 
-      const summaryMessage = `**整体概述**\n${overview}\n\n**关键要点**\n${keyPoints.map((point: string) => `- ${point}`).join('\n')}`;
+      const summaryMessage = `**全文摘要**\n${summary}\n\n**关键段落**\n${keyPoints.map(point => 
+        `- **${point.title}**\n  ${point.content}`
+      ).join('\n\n')}`;
       
       setState(prev => ({
         ...prev,
