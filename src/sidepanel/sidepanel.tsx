@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import './sidepanel.css';
 
 interface SummaryState {
   loading: boolean;
   error: string | null;
-  summary: string | null;
+  summary: {
+    overview: string | null;
+    keyPoints: string[] | null;
+  };
   question: string;
   chatHistory: Array<{
     role: 'user' | 'assistant';
@@ -18,7 +22,10 @@ const SidePanel: React.FC = () => {
   const [state, setState] = useState<SummaryState>({
     loading: false,
     error: null,
-    summary: null,
+    summary: {
+      overview: null,
+      keyPoints: null,
+    },
     question: '',
     chatHistory: [],
   });
@@ -51,11 +58,11 @@ const SidePanel: React.FC = () => {
             messages: [
               {
                 role: 'system',
-                content: 'You are a helpful assistant that summarizes web content.'
+                content: '你是一个帮助总结网页内容的助手。请提供两部分内容：\n1. 整体概述（200字以内的摘要）\n2. 关键要点（3-5个要点，每个要点都应该简洁明了）\n\n请使用 Markdown 格式输出，使用 ## 作为标题，使用 - 作为列表项。'
               },
               {
                 role: 'user',
-                content: `Please provide a concise summary of the following content:\n${content}`
+                content: `请帮我总结以下内容：\n${content}`
               }
             ]
           }
@@ -68,10 +75,26 @@ const SidePanel: React.FC = () => {
       }
 
       const data = await response.json();
+      const summaryText = data.output?.text || '';
+      
+      // 解析总结内容
+      const overviewMatch = summaryText.match(/##\s*整体概述\s*([\s\S]*?)(?=##|$)/i);
+      const keyPointsMatch = summaryText.match(/##\s*关键要点\s*([\s\S]*?)$/i);
+      
+      const overview = overviewMatch ? overviewMatch[1].trim() : summaryText;
+      const keyPointsText = keyPointsMatch ? keyPointsMatch[1].trim() : '';
+      const keyPoints = keyPointsText
+        .split(/[-*]\s+/)
+        .map((point: string) => point.trim())
+        .filter((point: string) => point.length > 0);
+
       setState(prev => ({
         ...prev,
         loading: false,
-        summary: data.output?.text || '未生成摘要',
+        summary: {
+          overview,
+          keyPoints,
+        },
         error: null
       }));
     } catch (error) {
@@ -79,7 +102,10 @@ const SidePanel: React.FC = () => {
         ...prev,
         loading: false,
         error: error instanceof Error ? error.message : '发生错误',
-        summary: null
+        summary: {
+          overview: null,
+          keyPoints: null,
+        }
       }));
     }
   };
@@ -117,7 +143,7 @@ const SidePanel: React.FC = () => {
             messages: [
               {
                 role: 'system',
-                content: 'You are a helpful assistant that answers questions about web content.'
+                content: '你是一个帮助回答问题的助手。请使用 Markdown 格式回答问题，合理使用标题、列表、粗体、斜体等格式。'
               },
               {
                 role: 'user',
@@ -196,10 +222,23 @@ const SidePanel: React.FC = () => {
         </div>
       )}
 
-      {state.summary && (
+      {state.summary.overview && (
         <div className="summary">
-          <h3>页面摘要</h3>
-          <p>{state.summary}</p>
+          <h3>整体概述</h3>
+          <div className="markdown-content">
+            <ReactMarkdown>{state.summary.overview}</ReactMarkdown>
+          </div>
+          
+          {state.summary.keyPoints && state.summary.keyPoints.length > 0 && (
+            <>
+              <h3>关键要点</h3>
+              <div className="markdown-content">
+                <ReactMarkdown>
+                  {state.summary.keyPoints.map((point: string) => `- ${point}\n`).join('')}
+                </ReactMarkdown>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -208,7 +247,9 @@ const SidePanel: React.FC = () => {
         <div className="chat-history">
           {state.chatHistory.map((message, index) => (
             <div key={index} className={`chat-message ${message.role}`}>
-              <div className="message-content">{message.content}</div>
+              <div className="message-content markdown-content">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
             </div>
           ))}
         </div>

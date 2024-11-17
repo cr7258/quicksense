@@ -98,11 +98,60 @@ button:disabled {
   box-sizing: border-box;
 }
 
+.summary h3 {
+  margin: 0 0 12px;
+  color: #1a1a1a;
+  font-size: clamp(14px, 3.5vw, 16px);
+  font-weight: 500;
+}
+
+.summary h3:not(:first-child) {
+  margin-top: 16px;
+}
+
 .summary p {
   margin: 0;
   line-height: 1.6;
   color: #262626;
   font-size: clamp(12px, 3vw, 14px);
+}
+
+.key-points {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  list-style-type: none;
+  counter-reset: key-point;
+}
+
+.key-points li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 8px;
+  line-height: 1.6;
+  color: #262626;
+  font-size: clamp(12px, 3vw, 14px);
+}
+
+.key-points li:last-child {
+  margin-bottom: 0;
+}
+
+.key-points li::before {
+  counter-increment: key-point;
+  content: counter(key-point);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background-color: #1677ff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .chat-section {
@@ -206,6 +255,130 @@ button:disabled {
   min-width: clamp(60px, 15vw, 80px);
   padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 20px);
   white-space: nowrap;
+}
+
+.markdown-content {
+  line-height: 1.6;
+  color: #262626;
+  font-size: clamp(12px, 3vw, 14px);
+}
+
+.markdown-content p {
+  margin: 0 0 8px;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin-bottom: 4px;
+}
+
+.markdown-content li:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 16px 0 8px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.markdown-content h1 {
+  font-size: clamp(18px, 4vw, 20px);
+}
+
+.markdown-content h2 {
+  font-size: clamp(16px, 3.5vw, 18px);
+}
+
+.markdown-content h3 {
+  font-size: clamp(14px, 3vw, 16px);
+}
+
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  font-size: clamp(12px, 2.5vw, 14px);
+}
+
+.markdown-content code {
+  background-color: #f0f0f0;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  background-color: #f0f0f0;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.markdown-content blockquote {
+  margin: 8px 0;
+  padding-left: 12px;
+  border-left: 4px solid #d9d9d9;
+  color: #595959;
+}
+
+.markdown-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid #e8e8e8;
+  margin: 16px 0;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  padding: 8px;
+  border: 1px solid #e8e8e8;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
 }
 
 /* 滚动条样式 */
