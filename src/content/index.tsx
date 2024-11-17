@@ -21,26 +21,22 @@ const extractPageContent = (): string => {
       return !['nav', 'header', 'footer', 'aside'].includes(tag) &&
              !['navigation', 'banner', 'contentinfo'].includes(role || '');
     });
-
-    content = contentElements
-      .map(element => element.textContent)
-      .join('\n')
-      .trim();
+    content = contentElements.map(el => el.textContent).join('\n');
   }
 
   // Clean up the content
-  return content
-    .replace(/\s+/g, ' ')
-    .trim();
+  return content.replace(/\s+/g, ' ').trim();
 };
 
 // Listen for messages from the sidebar
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_CONTENT') {
     const content = extractPageContent();
-    chrome.runtime.sendMessage({
+    // 直接使用 sendResponse 回复消息
+    sendResponse({
       type: 'PAGE_CONTENT',
       content,
     });
+    return true; // 表示我们会异步发送响应
   }
 });
