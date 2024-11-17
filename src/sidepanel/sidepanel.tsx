@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Layout, Typography, Button, Input, Card, Space, Divider, message, theme } from 'antd';
+import { Layout, Typography, Button, Input, Card, Space, Divider, message, theme, Select } from 'antd';
 import { SendOutlined, SyncOutlined, SettingOutlined } from '@ant-design/icons';
 import './sidepanel.css';
 
@@ -10,15 +10,13 @@ const { Title, Text } = Typography;
 interface SummaryState {
   loading: boolean;
   summarizing: boolean;
-  error: string | null;
-  chatHistory: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-  }>;
+  error: null | string;
+  chatHistory: Array<{ role: string; content: string }>;
   question: string;
 }
 
 const TONGYI_API_ENDPOINT = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation';
+const CLAUDE_API_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 
 const SidePanel: React.FC = () => {
   const { token } = theme.useToken();
@@ -31,6 +29,82 @@ const SidePanel: React.FC = () => {
   });
 
   const [pageContent, setPageContent] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<'tongyi' | 'claude'>('tongyi');
+
+  useEffect(() => {
+    // 从存储中加载选择的模型
+    chrome.storage.sync.get(['selectedModel'], (result) => {
+      if (result.selectedModel) {
+        setSelectedModel(result.selectedModel);
+      }
+    });
+  }, []);
+
+  const handleModelChange = (value: 'tongyi' | 'claude') => {
+    setSelectedModel(value);
+    chrome.storage.sync.set({ selectedModel: value });
+  };
+
+  const callAI = async (messages: Array<{ role: string; content: string }>) => {
+    const result = await chrome.storage.sync.get([
+      'tongyiApiKey',
+      'claudeApiKey',
+      'selectedModel'
+    ]);
+
+    const apiKey = selectedModel === 'tongyi' ? result.tongyiApiKey : result.claudeApiKey;
+    if (!apiKey) {
+      throw new Error(`请先在扩展选项中设置${selectedModel === 'tongyi' ? '通义千问' : 'Claude'} API key`);
+    }
+
+    if (selectedModel === 'tongyi') {
+      const response = await fetch(TONGYI_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'qwen-turbo',
+          input: { messages }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('请求失败: ' + response.statusText);
+      }
+
+      const data = await response.json();
+      return data.output?.text;
+    } else {
+      const response = await fetch(CLAUDE_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'x-api-key': apiKey,
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-3-opus-20240229',
+          max_tokens: 4096,
+          messages: messages.map(msg => ({
+            role: msg.role === 'system' ? 'assistant' : msg.role,
+            content: msg.content
+          })),
+          temperature: 0.7
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error('请求失败: ' + (errorData?.error?.message || response.statusText));
+      }
+
+      const data = await response.json();
+      return data.content[0].text;
+    }
+  };
 
   const summarizeContent = async (content: string) => {
     // 先添加用户的总结请求消息
@@ -42,29 +116,10 @@ const SidePanel: React.FC = () => {
     }));
 
     try {
-      const result = await chrome.storage.sync.get(['apiKey']);
-      if (!result.apiKey) {
-        setState(prev => ({
-          ...prev,
-          summarizing: false,
-          error: '请先在扩展选项中设置通义千问 API key',
-        }));
-        return;
-      }
-
-      const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${result.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'qwen-turbo',
-          input: {
-            messages: [
-              {
-                role: 'system',
-                content: `你是一个网页内容总结助手。请将给定的网页内容总结为两部分：
+      const response = await callAI([
+        {
+          role: 'system',
+          content: `你是一个网页内容总结助手。请将给定的网页内容总结为两部分：
 1) 整体概述（200字以内）
 2) 3-5个关键要点（每点30字以内）
 
@@ -73,29 +128,20 @@ const SidePanel: React.FC = () => {
   "overview": "这里是整体概述",
   "keyPoints": ["这里是要点1", "这里是要点2", "这里是要点3"]
 }`
-              },
-              {
-                role: 'user',
-                content: content,
-              }
-            ]
-          }
-        })
-      });
+        },
+        {
+          role: 'user',
+          content: content,
+        }
+      ]);
 
-      if (!response.ok) {
-        throw new Error('请求失败: ' + response.statusText);
-      }
-
-      const data = await response.json();
-      const text = data.output?.text;
-      if (!text) {
-        throw new Error('API 返回格式错误');
+      if (!response) {
+        throw new Error('无法生成总结');
       }
 
       let summaryData;
       try {
-        const cleanedText = text
+        const cleanedText = response
           .replace(/\`\`\`json|\`\`\`|\n/g, '')
           .trim();
         summaryData = JSON.parse(cleanedText);
@@ -135,50 +181,26 @@ const SidePanel: React.FC = () => {
     }));
 
     try {
-      const result = await chrome.storage.sync.get(['apiKey']);
-      if (!result.apiKey) {
-        setState(prev => ({
-          ...prev,
-          loading: false,
-          error: '请先在扩展选项中设置通义千问 API key',
-        }));
-        return;
-      }
-
-      const response = await fetch(TONGYI_API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${result.apiKey}`,
+      const response = await callAI([
+        {
+          role: 'system',
+          content: '你是一个帮助回答问题的助手。请使用 Markdown 格式回答问题，合理使用标题、列表、粗体、斜体等格式。'
         },
-        body: JSON.stringify({
-          model: 'qwen-turbo',
-          input: {
-            messages: [
-              {
-                role: 'system',
-                content: '你是一个帮助回答问题的助手。请使用 Markdown 格式回答问题，合理使用标题、列表、粗体、斜体等格式。'
-              },
-              {
-                role: 'user',
-                content: `Context: ${pageContent}\n\nQuestion: ${state.question}`
-              }
-            ]
-          }
-        }),
-      });
+        {
+          role: 'user',
+          content: `Context: ${pageContent}\n\nQuestion: ${state.question}`
+        }
+      ]);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || '获取回答失败');
+      if (!response) {
+        throw new Error('无法生成回答');
       }
 
-      const data = await response.json();
       setState(prev => ({
         ...prev,
         loading: false,
         error: null,
-        chatHistory: [...prev.chatHistory, { role: 'assistant', content: data.output?.text || '无法生成回答' }],
+        chatHistory: [...prev.chatHistory, { role: 'assistant', content: response }],
       }));
     } catch (error) {
       setState(prev => ({
@@ -215,23 +237,32 @@ const SidePanel: React.FC = () => {
   }, []);
 
   return (
-    <Layout style={{ height: '100vh', backgroundColor: 'white' }}>
+    <Layout style={{ height: '100vh', backgroundColor: token.colorBgContainer }}>
       <Header style={{ 
-        backgroundColor: 'white', 
+        padding: '0 16px', 
+        backgroundColor: token.colorBgContainer,
         borderBottom: `1px solid ${token.colorBorder}`,
-        padding: '0 16px',
-        height: '48px',
-        lineHeight: '48px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between'
       }}>
         <Title level={4} style={{ margin: 0 }}>QuickSense</Title>
-        <Button 
-          icon={<SettingOutlined />} 
-          type="text"
-          onClick={() => chrome.runtime.openOptionsPage()}
-        />
+        <Space>
+          <Select
+            value={selectedModel}
+            onChange={handleModelChange}
+            style={{ width: 120 }}
+            options={[
+              { value: 'tongyi', label: '通义千问' },
+              { value: 'claude', label: 'Claude' }
+            ]}
+          />
+          <Button 
+            icon={<SettingOutlined />} 
+            type="text"
+            onClick={() => chrome.runtime.openOptionsPage()}
+          />
+        </Space>
       </Header>
 
       <Content style={{ 
@@ -300,7 +331,7 @@ const SidePanel: React.FC = () => {
 
       <Footer style={{ 
         padding: '16px',
-        backgroundColor: 'white',
+        backgroundColor: token.colorBgContainer,
         borderTop: `1px solid ${token.colorBorder}`,
         display: 'flex',
         flexDirection: 'column',
