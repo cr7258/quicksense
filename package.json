@@ -1,0 +1,27 @@
+{
+  "name": "quicksense",
+  "version": "1.0.0",
+  "description": "A Chrome extension for webpage summarization using Tongyi Qianwen API",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "watch": "webpack --config webpack.config.js --watch",
+    "dev": "webpack --config webpack.config.js --mode=development --watch"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@types/chrome": "^0.0.246",
+    "@types/react": "^18.2.21",
+    "@types/react-dom": "^18.2.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "ts-loader": "^9.4.4",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "copy-webpack-plugin": "^11.0.0",
+    "@types/node": "^20.5.7",
+    "css-loader": "^6.8.1",
+    "style-loader": "^3.3.3"
+  }
+}

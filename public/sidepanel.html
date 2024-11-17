@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickSense</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      min-width: 300px;
+    }
+
+    .side-panel {
+      max-width: 100%;
+    }
+
+    h2 {
+      color: #333;
+      margin: 0 0 16px 0;
+      font-size: 18px;
+    }
+
+    .loading {
+      padding: 12px;
+      text-align: center;
+      color: #666;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+    }
+
+    .error {
+      padding: 12px;
+      color: #d32f2f;
+      background-color: #ffebee;
+      border-radius: 4px;
+      margin-bottom: 12px;
+    }
+
+    .error-action {
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .error-action button {
+      background-color: #d32f2f;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .error-action button:hover {
+      background-color: #b71c1c;
+    }
+
+    .summary {
+      padding: 12px;
+      background-color: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      line-height: 1.5;
+    }
+
+    .summary p {
+      margin: 0;
+      color: #333;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
