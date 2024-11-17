@@ -1,7 +1,10 @@
 // 监听扩展安装或更新事件
-chrome.runtime.onInstalled.addListener(() => {
-  // 安装后打开选项页面
-  chrome.runtime.openOptionsPage();
+chrome.runtime.onInstalled.addListener((details) => {
+  // 只在首次安装时打开选项页面
+  if (details.reason === 'install') {
+    chrome.runtime.openOptionsPage();
+  }
+  
   // 初始化侧边栏
   chrome.sidePanel.setOptions({
     enabled: true,
