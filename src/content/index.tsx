@@ -67,25 +67,37 @@ const FloatingButton = styled.button`
 
 // 主应用组件
 const App: React.FC = () => {
-  const handleButtonClick = () => {
-    const content = extractPageContent();
-    // 保存内容到本地存储
-    chrome.storage.local.set({ pageContent: content }, () => {
-      // 打开侧边栏
-      chrome.runtime.sendMessage({ action: 'toggleSidePanel' }, (response) => {
-        if (chrome.runtime.lastError) {
-          console.error('Error:', chrome.runtime.lastError);
-          return;
-        }
-        if (!response?.success) {
-          console.error('Failed to open side panel:', response?.error);
-        }
-      });
-    });
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+
+  const handleContentExtraction = async () => {
+    try {
+      const content = extractPageContent();
+      // 保存内容到本地存储
+      await chrome.storage.local.set({ pageContent: content });
+      // 直接在当前窗口打开 side panel
+      await chrome.runtime.sendMessage({ action: 'openSidePanel' });
+    } catch (error) {
+      console.error('Error handling content:', error);
+    }
   };
 
+  // 监听来自 background script 的消息
+  React.useEffect(() => {
+    const messageListener = async (message: any) => {
+      if (message.action === 'simulateButtonClick') {
+        await handleContentExtraction();
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    };
+  }, []);
+
   return (
-    <FloatingButton onClick={handleButtonClick}>
+    <FloatingButton ref={buttonRef} onClick={handleContentExtraction}>
       <img src={chrome.runtime.getURL('icon.png')} alt="QuickSense" onError={(e) => {
         const target = e.target as HTMLImageElement;
         target.style.display = 'none';

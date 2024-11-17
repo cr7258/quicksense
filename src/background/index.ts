@@ -6,58 +6,42 @@ chrome.runtime.onInstalled.addListener((details) => {
   }
 });
 
-// 存储side panel的状态
-let sidePanelOpen = false;
-
-// 切换side panel的状态
-async function toggleSidePanel(windowId: number) {
-  try {
-    if (!sidePanelOpen) {
-      // 如果side panel关闭，则打开它
-      await chrome.sidePanel.open({ windowId });
-      sidePanelOpen = true;
-    } else {
-      // 如果side panel打开，则关闭它
-      await chrome.sidePanel.close({ windowId });
-      sidePanelOpen = false;
-    }
-  } catch (error) {
-    console.error('Error toggling side panel:', error);
-    // 如果出错，重置状态
-    sidePanelOpen = false;
-  }
-}
-
-// 监听扩展图标点击事件
-chrome.action.onClicked.addListener(async (tab) => {
-  if (tab.id) {
-    await toggleSidePanel(tab.windowId);
+// 监听来自content script的消息
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'openSidePanel' && sender.tab?.windowId) {
+    chrome.sidePanel.open({ windowId: sender.tab.windowId })
+      .catch(error => {
+        console.error('Error opening side panel:', error);
+      });
   }
 });
 
-// 监听来自content script的消息
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === 'toggleSidePanel') {
-    // 获取当前窗口ID
-    const windowId = sender.tab?.windowId;
-    if (windowId) {
-      // 切换side panel状态
-      toggleSidePanel(windowId)
-        .then(() => {
-          sendResponse({ success: true });
-        })
-        .catch((error: Error) => {
-          console.error('Error toggling side panel:', error);
-          sendResponse({ success: false, error: error.message });
-        });
-      return true; // 保持消息通道开启
+// 监听扩展图标点击事件
+chrome.action.onClicked.addListener(async (tab) => {
+  if (tab?.id) {
+    try {
+      // 通知 content script 处理内容
+      await chrome.tabs.sendMessage(tab.id, { action: 'simulateButtonClick' });
+    } catch (error) {
+      console.error('Error handling action click:', error);
     }
   }
 });
 
 // 监听快捷键命令
-chrome.commands.onCommand.addListener((command) => {
-  if (command === "open_options") {
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === "toggle_side_panel") {
+    try {
+      // 获取当前标签页
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id) {
+        // 向 content script 发送消息
+        await chrome.tabs.sendMessage(tab.id, { action: 'simulateButtonClick' });
+      }
+    } catch (error) {
+      console.error('Error handling keyboard shortcut:', error);
+    }
+  } else if (command === "open_options") {
     chrome.runtime.openOptionsPage();
   }
 });
