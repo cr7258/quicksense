@@ -2,12 +2,7 @@
   "manifest_version": 3,
   "name": "QuickSense",
   "version": "1.0.0",
-  "description": "使用通义千问 API 生成网页内容摘要的 Chrome 扩展",
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  },
+  "description": "AI-powered webpage content summarization",
   "permissions": [
     "storage",
     "activeTab",
@@ -15,21 +10,13 @@
     "sidePanel"
   ],
   "host_permissions": [
+    "<all_urls>",
     "https://dashscope.aliyuncs.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"]
-    }
-  ],
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
-  "options_page": "options.html",
   "action": {
     "default_title": "QuickSense",
     "default_icon": {
@@ -38,13 +25,28 @@
       "128": "icon128.png"
     }
   },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
   "commands": {
     "open_options": {
       "suggested_key": {
         "default": "Ctrl+Shift+O",
         "mac": "Command+Shift+O"
       },
-      "description": "打开选项页面"
+      "description": "Open options page"
     }
   }
 }
