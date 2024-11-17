@@ -37,8 +37,8 @@ const FloatingButton = styled.button`
   position: fixed;
   right: 20px;
   bottom: 20px;
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: #1890ff;
   color: white;
@@ -48,13 +48,20 @@ const FloatingButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  padding: 0;
   transition: all 0.3s;
   z-index: 10000;
+  overflow: hidden;
 
   &:hover {
     background-color: #40a9ff;
     transform: scale(1.05);
+  }
+
+  img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
   }
 `;
 
@@ -79,7 +86,11 @@ const App: React.FC = () => {
 
   return (
     <FloatingButton onClick={handleButtonClick}>
-      +
+      <img src={chrome.runtime.getURL('icon.png')} alt="QuickSense" onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.style.display = 'none';
+        target.parentElement!.textContent = '+';
+      }} />
     </FloatingButton>
   );
 };

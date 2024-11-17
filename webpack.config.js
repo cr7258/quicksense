@@ -12,6 +12,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: '[name].js',
+    clean: true
   },
   module: {
     rules: [
@@ -24,6 +25,13 @@ module.exports = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
+      {
+        test: /\.(png|jpg|jpeg|gif|svg)$/i,
+        type: 'asset/resource',
+        generator: {
+          filename: '[name][ext]'
+        }
+      }
     ],
   },
   resolve: {
@@ -32,7 +40,26 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: 'public', to: '.' },
+        { 
+          from: 'public',
+          to: '.',
+          globOptions: {
+            ignore: ['**/manifest.json']
+          }
+        },
+        {
+          from: 'public/manifest.json',
+          to: 'manifest.json',
+          transform(content) {
+            return Buffer.from(JSON.stringify({
+              ...JSON.parse(content.toString()),
+              web_accessible_resources: [{
+                resources: ['icon.png'],
+                matches: ['<all_urls>']
+              }]
+            }, null, 2))
+          }
+        }
       ],
     }),
   ],
